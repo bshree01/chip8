@@ -2,6 +2,6 @@
 
 int main() 
 {
-   printf("Does this push get commited to Git?");
+   printf("Does this new update from VSCode get committed and pushed to Git?");
    return 0;
 }
