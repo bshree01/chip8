@@ -1,6 +1,10 @@
 # Done  
 
 **I. Research Chip-8 architecture**  
+    [Wikipedia link](https://en.wikipedia.org/wiki/CHIP-8)  
+    [Technical reference](http://devernay.free.fr/hacks/chip8/C8TECH10.HTM)  
+    [Emulator tips](https://multigesture.net/articles/how-to-write-an-emulator-chip-8-interpreter/)  
+    [Example of a working Emulator + ROMs](https://github.com/dmatlack/chip8)
 
 **II. Set up project**  
     I'm using C, developing in VSCode  
@@ -12,7 +16,8 @@
     1. Load a ROM  
     2. Registers  
     3. Loop execution  
-    4. Opcodes  
+    4. Decode Opcodes  
+    5. Implement each opcode  
 
 **IV. User Input**  
 
