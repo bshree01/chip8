@@ -2,6 +2,6 @@
 
 int main() 
 {
-   printf("Does this compile when pulled from Git?");
+   printf("Does this push get commited to Git?");
    return 0;
 }
