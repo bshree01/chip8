@@ -52,6 +52,62 @@ int main()
         if (opcode != 0)
         {
             printf("opcode%i: %x\n", 1+x/2, opcode);
+            //Decode opcodes
+            switch (opcode >> 12)    //Look at first byte only
+            {
+                case 0x0:
+                    printf("case 0\n");
+                    break;
+                case 0x1:
+                    printf("case 1\n");
+                    break;
+                case 0x2:
+                    printf("case 2\n");
+                    break;
+                case 0x3:
+                    printf("case 3\n");
+                    break;
+                case 0x4:
+                    printf("case 4\n");
+                    break;
+                case 0x5:
+                    printf("case 5\n");
+                    break;
+                case 0x6:
+                    printf("case 6\n");
+                    break;
+                case 0x7:
+                    printf("case 7\n");
+                    break;
+                case 0x8:
+                    printf("case 8\n");
+                    break;
+                case 0x9:
+                    printf("case 9\n");
+                    break;
+                case 0xA:
+                    printf("case A\n");
+                    break;
+                case 0xB:
+                    printf("case B\n");
+                    break;
+                case 0xC:
+                    printf("case C\n");
+                    break;
+                case 0xD:
+                    printf("case D\n");
+                    break;
+                case 0xE:
+                    printf("case E\n");
+                    break;
+                case 0xF:
+                    printf("case F\n");
+                    break;
+                default:
+                    printf("Oops, unknown opcode\n");
+                    break;
+            }
+
         }
     }
 
