@@ -10,8 +10,6 @@
     I'm using C, developing in VSCode  
     I created GitHub repo to share progress / notes  
 
-# To Do  
-
 **III. Chip-8 processor**  
     1. Load a ROM  
     2. Registers  
@@ -21,9 +19,18 @@
 
 **IV. User Input**  
 
-**V. Display Output**  
+# To Do  
 
-**VI. Sound Output**  
+**V. Troubleshoot**  
+    1. Following the operational flow results in unused opcodes... this shouldn't be the case  
+
+**VI. Display Output**  
+
+**VII. Improvements** 
+    1. Subdivide into functions
+    2. Other clean-up
+
+**VIII. Sound Output**  
 
 # Notes  
 Example of how to format a link: [link](https://www.example.com).  
