@@ -25,9 +25,9 @@
     unsigned short pc = 0; //Program counter
 
     unsigned char gfx[64 * 32]; //Graphics pixels //ToDo: initial value?
-    unsigned char delay_timer; //ToDo: initial value?
-    unsigned char sound_timer; //ToDo: initial value?
-    unsigned char key[16] = {0}; //Current state of the keypad //ToDo: initial value?
+    unsigned char delay_timer = 0;
+    unsigned char sound_timer = 0;
+    unsigned char key[16] = {0}; //Current state of the keypad
 
     char key_chars[16] = {'1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'};
     bool escape = false;
@@ -97,27 +97,6 @@ int main()
         return 1;
     }
 
-    //ToDo: skip the opcode stuff and just test the keyboard pressing thread stuff first; make sure press and release is registered for all 16 keys
-    while(!escape)
-    {
-        unsigned short key_pressed = 0xFF; //initialize to unused value
-
-            //Loop until a key is pressed
-            while(key_pressed == 0xFF && !escape)
-            {
-                //Figure out which key was pressed
-                for (int key_index = 0; key_index < 16; key_index++)
-                {
-                    if (key[key_index] == 1)
-                    {
-                        key_pressed = key_index;
-                        break;
-                    }    
-                }
-            }
-            printf("%hu key_pressed: %c\n", key_pressed, key_chars[key_pressed]);
-    }
-
     //Define local variables
     unsigned short x;
     unsigned short y;
@@ -128,12 +107,10 @@ int main()
     unsigned short N;
 
     //Loop through until exit criteria breaks out of cycle
-    while(0) //ToDo: make an exit flag
+    while(!escape)
     {
         //opcode = two bytes at the program counter
         opcode = memory[counter] << 8 | memory[counter + 1];
-
-        
 
         printf("opcode: %x\n", opcode); //ToDo: This is temp. Remove later
         //Decode opcodes
@@ -156,7 +133,7 @@ int main()
                         counter = stack[stack_point];
                         break;
                     default:
-                        printf("*********0nnn opcodes not implemented************");
+                        printf("*********0nnn opcodes not implemented************\n");
 
                 }
                 break;
@@ -206,19 +183,19 @@ int main()
                 }
                 else
                 {
-                    printf("*************0x500n is undefined opcode where n != 0***************");
+                    printf("*************0x500n is undefined opcode where n != 0***************\n");
                 }
                 break;
             case 0x6:
                 //Load value kk into register Vx (0x6XKK)
-                printf("case 6XKK: Load KK into register at Vx");
+                printf("case 6XKK: Load KK into register at Vx\n");
                 x = opcode & 0x0F00 >> 8;
                 KK = opcode & 0x00FF;
                 V[x] = KK;
                 break;
             case 0x7:
                 //Adds value kk to value in register Vx (0x7XKK)
-                printf("case 7XKK: Vx = Vx + KK");
+                printf("case 7XKK: Vx = Vx + KK\n");
                 x = opcode & 0x0F00 >> 8;
                 KK = opcode & 0x00FF;
                 V[x] = V[x] + KK;
@@ -329,7 +306,7 @@ int main()
                 }
                 else
                 {
-                    printf("*************0x900n is undefined opcode where n != 0***************");
+                    printf("*************0x900n is undefined opcode where n != 0***************\n");
                 }
                 break;
             case 0xA:
@@ -389,7 +366,7 @@ int main()
                         }
                         break;
                     default:
-                        printf("*********0xEnnn opcodes not implemented besides 0xEX9E and 0xEXA1************");
+                        printf("*********0xEnnn opcodes not implemented besides 0xEX9E and 0xEXA1************\n");
 
                 }
                 break;
@@ -483,7 +460,7 @@ int main()
                         I = I + (x + 1);
                         break;
                     default:
-                        printf("*********0xF0nn opcodes not implemented besides 0xF007, 0xF00A, 0xF015, 0xF018, 0xF01E, 0xF029, 0xF033, 0xF055, 0xF065************");
+                        printf("*********0xF0nn opcodes not implemented besides 0xF007, 0xF00A, 0xF015, 0xF018, 0xF01E, 0xF029, 0xF033, 0xF055, 0xF065************\n");
                 }
                 break;
             default:
@@ -494,7 +471,20 @@ int main()
         //Move program counter + 2
         counter += 2;
 
+        //Update timers
+        if (delay_timer > 0)
+        {
+            delay_timer--;
+        }
 
+        if(sound_timer > 0)
+        {
+            if(sound_timer == 0)
+            {
+                //ToDo: Implement Beep
+            }
+            sound_timer--;
+        }
 
         //If the draw flag is set, update the screen
         if (draw_flag)
@@ -504,7 +494,11 @@ int main()
             draw_flag = false;
         }
 
-        //Store key press state (Press and Release)
+        //Wait (to emulate 60 Hz)
+        struct timespec ts;
+        ts.tv_sec = 0;
+        ts.tv_nsec = 1000000000 / 60;
+        nanosleep(&ts, NULL);
 
     }
 
