@@ -15,6 +15,7 @@
     unsigned short opcode; //2 bytes
     unsigned short counter;
     unsigned short const counter_start = 0x200;
+    unsigned short const max_game_size = (0x1000 - 0x200);
     
     unsigned short stack[16] = {0};
     unsigned short stack_point = 0;
@@ -24,13 +25,36 @@
     unsigned short I = 0; //Index register
     unsigned short pc = 0; //Program counter
 
-    unsigned char gfx[64 * 32]; //Graphics pixels //ToDo: initial value?
+    unsigned char gfx[32][64] = {0}; //Graphics pixels
     unsigned char delay_timer = 0;
     unsigned char sound_timer = 0;
     unsigned char key[16] = {0}; //Current state of the keypad
 
     char key_chars[16] = {'1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'};
     bool escape = false;
+
+    //Flag for updating the display
+    bool draw_flag = false;
+
+   unsigned char chip8_fontset[80] = 
+    { 
+        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+        0x20, 0x60, 0x20, 0x20, 0x70, // 1
+        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+        0xF0, 0x80, 0xF0, 0x80, 0x80  // F 
+    };
 
 DWORD WINAPI update_key(LPVOID lpParam)
 {
@@ -60,6 +84,12 @@ DWORD WINAPI update_key(LPVOID lpParam)
 
 int main() 
 {
+    //Set fot characters to 0x00 through 0x80 in memory
+    for (int font_index = 0; font_index < 80; font_index++)
+    {
+        memory[font_index] = chip8_fontset[font_index];
+    }
+    
     //Location of example Game ROM
     char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
 
@@ -73,20 +103,17 @@ int main()
         exit(-1); 
     }
 
-    //Seek to counter_start (where the ROM load needs to begin)
-    fseek(rom_file, counter_start, SEEK_SET);
+    // //Seek to counter_start (where the ROM load needs to begin)
+    // fseek(rom_file, counter_start, SEEK_SET);
 
     //Read the file
-    fread(memory + counter_start, 1, 4096 - counter_start, rom_file);
+    fread(&memory[counter_start], 1, max_game_size, rom_file);
 
     //Close the ROM file
     fclose(rom_file);
 
     //Initialize counter to ROM starting location (0x200)
     counter = counter_start;
-
-    //Flag for updating the display
-    bool draw_flag = false;
         
     //Start thread to update keys
     DWORD dwThreadId;
@@ -112,7 +139,8 @@ int main()
         //opcode = two bytes at the program counter
         opcode = memory[counter] << 8 | memory[counter + 1];
 
-        printf("opcode: %x\n", opcode); //ToDo: This is temp. Remove later
+        printf("opcode %u: %x\n", counter, opcode); //ToDo: This is temp. Remove later
+
         //Decode opcodes
         switch (opcode >> 12)    //Look at first byte only
         {
