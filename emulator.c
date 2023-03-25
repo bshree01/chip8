@@ -135,11 +135,11 @@ void draw()
             {
                 if (gfx[y][x] == 0)
                 {
-                    printf("0");
+                    printf(" ");
                 }
                 else
                 {
-                    printf(" ");
+                    printf("#");
                 }
             }
             printf("\n");
@@ -157,6 +157,8 @@ int main()
     }
     
     //Location of example Game ROM
+    //char file_name[] = ".\\roms\\games\\Tank.ch8"; //ToDo: Add user input to select other games
+
     char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
 
     //Open the ROM file ("rb" means read mode, binary)
@@ -204,8 +206,16 @@ int main()
 
         if (debug_flag)
         {
-            printf("opcode %u: %x\n", counter, opcode); //ToDo: This is temp. Remove later
+            printf("opcode %04X: %04X\n", counter, opcode); //ToDo: This is temp. Remove later
         }
+
+        //Set variables in case they get used
+        x = (opcode & 0x0F00) >> 8;
+        y = (opcode & 0x00F0) >> 4;
+        KK = opcode & 0x00FF;
+        N = opcode & 0x000F;
+        NN = opcode & 0x00FF;
+        NNN = opcode & 0x0FFF;
 
         //Decode opcodes
         switch (opcode >> 12)    //Look at first byte only
@@ -227,7 +237,6 @@ int main()
                         break;
                     default:
                         if (debug_flag) printf("*********0nnn opcodes not implemented************\n");
-
                 }
                 break;
             case 0x1:
@@ -247,8 +256,7 @@ int main()
             case 0x3:
                 //Skip next instruction if Vx = NN (0x3XNN)
                 if (debug_flag) printf("case 3XNN: skip next instruction if Vx = NN\n");
-                x = opcode & 0x0F00 >> 8;
-                NN = opcode & 0x00FF;
+                
                 if (V[x] == NN)
                 {
                     counter += 2;
@@ -257,8 +265,7 @@ int main()
             case 0x4:
                 //Skip next instruction if Vx = !NN (0x4XNN)
                 if (debug_flag) printf("case 4XNN: skip next instruction if Vx != NN\n");
-                x = opcode & 0x0F00 >> 8;
-                NN = opcode & 0x00FF;
+
                 if (V[x] != NN)
                 {
                     counter += 2;
@@ -269,8 +276,7 @@ int main()
                 {
                     //Skip next instruction if Vx = Vy (0x5XY0)
                     if (debug_flag) printf("case 5XY0: skip next instruction if Vx = Vy\n");
-                    x = opcode & 0x0F00 >> 8;
-                    y = opcode & 0x00F0 >> 4;
+                    
                     if (V[x] == V[y])
                     {
                         counter += 2;
@@ -284,15 +290,13 @@ int main()
             case 0x6:
                 //Load value kk into register Vx (0x6XKK)
                 if (debug_flag) printf("case 6XKK: Load KK into register at Vx\n");
-                x = opcode & 0x0F00 >> 8;
-                KK = opcode & 0x00FF;
+                
                 V[x] = KK;
                 break;
             case 0x7:
                 //Adds value kk to value in register Vx (0x7XKK)
                 if (debug_flag) printf("case 7XKK: Vx = Vx + KK\n");
-                x = opcode & 0x0F00 >> 8;
-                KK = opcode & 0x00FF;
+
                 V[x] = V[x] + KK;
                 break;
             case 0x8:
@@ -301,36 +305,31 @@ int main()
                     case 0x0000:
                         //Set Vx = Vy
                         if (debug_flag) printf("case 8xy0: Set Vx = Vy\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[x] = V[y];
                         break;
                     case 0x0001:
                         //Set Vx = Vx OR Vy
                         if (debug_flag) printf("case 8xy1: Set Vx = Vx OR Vy\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[x] = V[x] | V[y];
                         break;
                     case 0x0002:
                         //Set Vx = Vx AND Vy
                         if (debug_flag) printf("case 8xy2: Set Vx = Vx AND Vy\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[x] = V[x] & V[y];
                         break;
                     case 0x0003:
                         //Set Vx = Vx XOR Vy
                         if (debug_flag) printf("case 8xy3: Set Vx = Vx XOR Vy\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[x] = V[x] ^ V[y];
                         break;
                     case 0x0004:
                         //Set Vx = Vx + Vy; set VF = carry (if Vx + Vy is greater than 8 bits, aka 255 VF is set to 1; otherwise VF = 0; only lowest 8 bits are kept in Vx)
                         if (debug_flag) printf("case 8xy4: Set Vx = Vx + Vy; and VF = carry\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         if (V[y] > (0xFF - V[x])) //If Vy > 255 - Vx, then you'll have to carry
                         {
                             V[0xF] = 1; //Carry
@@ -344,8 +343,7 @@ int main()
                     case 0x0005:
                         //Set Vx = Vx - Vy; set VF = NOT borrow (if Vx > Vy, then VF = 1; otherwise VF = 0)
                         if (debug_flag) printf("case 8xy5: Set Vx = Vx - Vy; VF = NOT borrow\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         not_borrow = 0;
                         if (V[x] > V[y]) //If Vx > Vy, then you won't get negative and therefore won't have to borrow; then VF = NOT borrow
                         {
@@ -357,16 +355,14 @@ int main()
                     case 0x0006:
                         //Set Vx = Vx >> 1 (aka divided by 2); VF = LSB of Vx (the one that shifts away)
                         if (debug_flag) printf("case 8xy6: Set Vx = Vx >> 1; VF = LSB of Vx\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[0xF] = V[x] & 0x1; //VF = LSB
                         V[x] = V[x] >> 1;
                         break;
                     case 0x0007:
                         //Set Vx = Vy - Vx; set VF = NOT borrow (if Vy > Vx, then VF = 1; otherwise VF = 0)
                         if (debug_flag) printf("case 8xy7: Set Vx = Vy - Vx; VF = NOT borrow\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         not_borrow = 0;
                         if (V[y] > V[x]) //If Vy > Vx, then you won't get negative and therefore won't have to borrow; then VF = NOT borrow
                         {
@@ -378,8 +374,7 @@ int main()
                     case 0x000E:
                         //Set Vx = Vx << 1 (aka multiplied by 2); VF = MSB of Vx (the one that shifts away)
                         if (debug_flag) printf("case 8xyE: Set Vx = Vx << 1; VF = MSB of Vx\n");
-                        x = opcode & 0x0F00 >> 8;
-                        y = opcode & 0x00F0 >> 4;
+
                         V[0xF] = V[x] & 0x8; //VF = MSB
                         V[x] = V[x] << 1;
                         break;
@@ -392,8 +387,7 @@ int main()
                 {
                     //Skip next instruction if Vx != Vy (0x9XY0)
                     if (debug_flag) printf("case 9XY0: skip next instruction if Vx != Vy\n");
-                    x = opcode & 0x0F00 >> 8;
-                    y = opcode & 0x00F0 >> 4;
+
                     if (V[x] != V[y])
                     {
                         counter += 2;
@@ -407,13 +401,13 @@ int main()
             case 0xA:
                 //Set Register I = nnn (0xAnnn)
                 if (debug_flag) printf("case Annn: Set Reg I = nnn\n");
-                NNN = opcode & 0x0FFF;
+
                 I = NNN;
                 break;
             case 0xB:
                 //Jump to location nnn + V0
                 if (debug_flag) printf("case Bnnn: Jump to location nnn + V0\n");
-                NNN = opcode & 0x0FFF;
+
                 counter = NNN + V[0];
                 skip_counter = true; //Don't execute counter += 2
                 break;
@@ -423,8 +417,7 @@ int main()
                 unsigned char random_byte;
                 srand(time(NULL)); //Seed the random generator with the current time
                 random_byte = rand() % 256; // Randome number between 0 and 255
-                x = opcode & 0x0F00 >> 8;
-                KK = opcode & 0x00FF;
+
                 V[x] = random_byte & KK;
                 break;
             case 0xD:
@@ -432,10 +425,6 @@ int main()
                 //Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF = 1, otherwise 0.
                 //Wrap-around
                 if (debug_flag) printf("case Dxyn: Display n-byte sprite starting at mem location I at (Vx, Vy); \n");
-
-                x = opcode & 0x0F00 >> 8;
-                y = opcode & 0x00F0 >> 4;
-                N = opcode & 0x000F;
 
                 //Draw sprite
                 draw_sprite(V[x], V[y], N);
@@ -447,7 +436,7 @@ int main()
                     case 0x009E:
                         //Skip next instruction if the key with the value of Vx is pressed (0xEX9E)
                         if (debug_flag) printf("case EX9E: Skip next instruction if key with the value of Vx is pressed\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         if (key[V[x]] != 0)
                         {
                             counter += 2;
@@ -456,7 +445,7 @@ int main()
                     case 0x00A1:
                         //Skip next instruction if the key with the value of Vx is NOT pressed (0xEXA1)
                         if (debug_flag) printf("case EXA1: Skip next instruction if key with the value of Vx is NOT pressed\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         if (key[V[x]] == 0)
                         {
                             counter += 2;
@@ -473,13 +462,13 @@ int main()
                     case 0x0007:
                         //Set Vx = delay timer value (0xFx07)
                         if (debug_flag) printf("case FX07: Vx = delay timer value\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         V[x] = delay_timer;
                         break;
                     case 0x000A:
                         //Wait for a key press, store the value of the key in Vx (0xFx0A)
                         if (debug_flag) printf("case FX0A: Wait for key press; Vx = value of the key\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         unsigned short key_pressed = 0xFF; //initialize to unused value
 
                         //Loop until a key is pressed
@@ -497,32 +486,32 @@ int main()
                     case 0x0015:
                         //Set delay timer = Vx (0xFx15)
                         if (debug_flag) printf("case FX15: Set delay timer to Vx\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         delay_timer = V[x];
                         break;
                     case 0x0018:
                         //Set sound timer = Vx (0xFx18)
                         if (debug_flag) printf("case FX18: Set sound timer = Vx\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         sound_timer = V[x];
                         break;
                     case 0x001E:
                         //Set I = I + Vx (0xFx1E)
                         if (debug_flag) printf("case FX1E: Set I = I + Vx\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         I = I + V[x];
                         break;
                     case 0x0029:
                         //Set I = location of sprite for digit Vx (0xFx29)
                         if (debug_flag) printf("case FX29: Set I = location of sprite for digit Vx\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         //To Do: set sprite location
                         I = V[x] * 5; //8x5 sprites. 0 starts at 0, 1 starts at 5, etc
                         break;
                     case 0x0033:
                         //Store Binary Coded Decimal (BCD) representation of Vx in memory locations I, I+1, and I+2 (0xFx33)
                         if (debug_flag) printf("case FX33: Store Binary Coded Decimal (BCD) representation of Vx in memory locations I, I+1, and I+2\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         unsigned short value = V[x];
                         unsigned short hundreds = value / 100;
                         unsigned short tens = (value % 100) / 10;
@@ -539,7 +528,7 @@ int main()
                     case 0x0055:
                         //Store registers V0 through Vx in memory starting at location I (0xFx55)
                         if (debug_flag) printf("case FX55: Store registers V0 through Vx in memory starting at location I\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         for (int v_index = 0; v_index <= x; v_index++)
                         {
                             memory[I + v_index] = V[v_index];
@@ -549,7 +538,7 @@ int main()
                     case 0x0065:
                         //Read registers V0 through Vx from memory starting at location I (0xFx65)
                         if (debug_flag) printf("case FX65: Read registers V0 through Vx from memory starting at location I\n");
-                        x = opcode & 0x0F00 >> 8;
+
                         for (int v_index = 0; v_index <= x; v_index++)
                         {
                             V[v_index] = memory[I + v_index];
@@ -598,7 +587,7 @@ int main()
         struct timespec ts;
         ts.tv_sec = 0;
         ts.tv_nsec = 1000000000 / 60;
-        nanosleep(&ts, NULL);
+        //nanosleep(&ts, NULL);
 
     }
 
