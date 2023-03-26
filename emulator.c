@@ -1,3 +1,5 @@
+#define SDL_MAIN_HANDLED
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h> 
@@ -6,6 +8,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <windows.h>
+#include <SDL2\SDL.h>
 
 #define KEY_ESC 0x1B
 
@@ -59,6 +62,24 @@
         0xF0, 0x80, 0xF0, 0x80, 0x80  // F 
     };
 
+    unsigned short const pixel_size = 10;
+    unsigned short const screen_height = 32 * pixel_size;
+    unsigned short const screen_width = 64 * pixel_size;
+
+    SDL_Renderer *renderer;
+
+DWORD WINAPI update_key(LPVOID);
+void draw_sprite(unsigned char, unsigned char, unsigned char);
+void draw();
+int emulate();
+
+int main() 
+{
+    int result = emulate();
+    return result;
+}
+
+
 DWORD WINAPI update_key(LPVOID lpParam)
 {
     while (!escape)
@@ -83,6 +104,7 @@ DWORD WINAPI update_key(LPVOID lpParam)
     }
     return 0;
 }
+
 
 void draw_sprite(unsigned char x_start, unsigned char y_start, unsigned char byte_count)
 {
@@ -129,27 +151,61 @@ void draw()
 {
     if (!debug_flag)
     {
-        for (int y = 0; y < 32; y++)
-        {
-            for (int x = 0; x < 64; x++)
-            {
-                if (gfx[y][x] == 0)
-                {
-                    printf(" ");
-                }
-                else
-                {
-                    printf("#");
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255); // set the background color
+        SDL_RenderClear(renderer); // clear the renderer
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // set the pixel color
+
+        // loop over all pixels and draw them
+        for (int y = 0; y < screen_height; y++) {
+            for (int x = 0; x < screen_width; x++) {
+                if (gfx[y][x]) {
+                    SDL_Rect rect = { x * pixel_size, y * pixel_size, pixel_size, pixel_size };
+                    SDL_RenderFillRect(renderer, &rect); // draw the pixel
                 }
             }
-            printf("\n");
         }
-        printf("\n");
+
+        SDL_RenderPresent(renderer); // update the screen
+
+
+        // for (int y = 0; y < 32; y++)
+        // {
+        //     for (int x = 0; x < 64; x++)
+        //     {
+        //         if (gfx[y][x] == 0)
+        //         {
+        //             printf(" ");
+        //         }
+        //         else
+        //         {
+        //             printf("#");
+        //         }
+        //     }
+        //     printf("\n");
+        // }
+        // printf("\n");
     }
+    //Wait (to emulate 60 Hz)
+        struct timespec ts;
+        ts.tv_sec = 0;
+        ts.tv_nsec = 1000000000 / 60;
+        //nanosleep(&ts, NULL);
 }
 
-int main() 
+int emulate() 
 {
+    printf("I am here");
+
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    //Create a window and a renderer
+    SDL_Window *window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
     //Set font characters to 0x00 through 0x80 in memory
     for (int font_index = 0; font_index < 80; font_index++)
     {
@@ -159,7 +215,9 @@ int main()
     //Location of example Game ROM
     //char file_name[] = ".\\roms\\games\\Tank.ch8"; //ToDo: Add user input to select other games
 
-    char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
+    //char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
+
+    char file_name[] = ".\\roms\\games\\UFO [Lutz V, 1992].ch8";
 
     //Open the ROM file ("rb" means read mode, binary)
     FILE* rom_file = fopen(file_name, "rb");
@@ -582,13 +640,6 @@ int main()
             draw();
             draw_flag = false;
         }
-
-        //Wait (to emulate 60 Hz)
-        struct timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = 1000000000 / 60;
-        //nanosleep(&ts, NULL);
-
     }
 
 
@@ -600,6 +651,11 @@ int main()
 
     //Clean up thread
     CloseHandle(key_thread);
+
+    //Quit SDL
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
     printf("Reached end of program");
     return 0;
