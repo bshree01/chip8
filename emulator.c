@@ -81,18 +81,30 @@ int WinMain(int argc, char* argv[])
 
 int update_key(void *data)
 {
-    printf("I am here in update_key");
+
+     // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0) 
+    {
+        printf("SDL_Init failed: %s\n", SDL_GetError());
+        return 1;
+    }
+    printf("SDL initialized\n");
+    
+    //Create a window and a renderer
+    SDL_Window *window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_SHOWN);
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+
     // Initialize timer variables
     int start_time_key_event = SDL_GetTicks();//ToDo var type
     int frame_time_key_event = 0;
     int wait_time_key_event = 0;
     int total_time_key_event = 0;
 
-    SDL_Event event;
-
     while (!escape)
     {
         // Handle events
+        SDL_Event event;
         while (SDL_PollEvent(&event))
         {
             
@@ -151,6 +163,12 @@ int update_key(void *data)
             }   
         }
     }
+   
+    //Quit SDL
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }
 
@@ -216,18 +234,7 @@ void draw()
 
 int emulate() 
 {
-    printf("start of emulate()\n");
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0) 
-    {
-        printf("SDL_Init failed: %s\n", SDL_GetError());
-        return 1;
-    }
-    printf("SDL initialized\n");
-    //Create a window and a renderer
-    SDL_Window *window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_SHOWN);
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    printf("window created\n");
+
     //Set font characters to 0x00 through 0x80 in memory
     for (int font_index = 0; font_index < 80; font_index++)
     {
@@ -260,6 +267,8 @@ int emulate()
     //Initialize counter to ROM starting location (0x200)
     counter = counter_start;
 
+    //ToDo: if I just call update_key(NULL), it works; but making it a thread causes the SDL window to freeze and crash
+
     //Start thread to update keys
     SDL_Thread *thread = SDL_CreateThread(update_key, "UpdateKeyThread", NULL);
     if (thread == NULL) {
@@ -267,15 +276,12 @@ int emulate()
         exit(1);
     }
 
-    printf("Thread started to listen for keys\n");
 
     // Initialize timer variables
     int start_time_processor = SDL_GetTicks();//ToDo var type
     int frame_time_processor = 0;
     int wait_time_processor = 0;
     int total_time_processor = 0;
-
-
 
     //Define local variables
     unsigned short x;
@@ -713,11 +719,6 @@ int emulate()
 
     //Wait for key thread to exit
     SDL_WaitThread(thread, NULL);
-
-    //Quit SDL
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
 
     printf("Reached end of program");
     return 0;
