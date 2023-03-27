@@ -1,5 +1,4 @@
-#define SDL_MAIN_HANDLED
-
+#include <SDL2/SDL.h> 
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h> 
@@ -7,86 +6,88 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <time.h>
-#include <windows.h>
-#include <SDL2\SDL.h>
+
 
 #define KEY_ESC 0x1B
 
-    bool debug_flag = false;
-    //Declare memory array; initialize all to zero 
-    unsigned char memory[4096] = {0};
+bool debug_flag = true;
+//Declare memory array; initialize all to zero 
+unsigned char memory[4096] = {0};
 
-    unsigned short opcode; //2 bytes
-    unsigned short counter;
-    unsigned short const counter_start = 0x200;
-    unsigned short const max_game_size = (0x1000 - 0x200);
-    
-    unsigned short stack[16] = {0};
-    unsigned short stack_point = 0;
-    
-    
-    unsigned short V[16] = {0}; //Declare registers
-    unsigned short I = 0; //Index register
-    unsigned short pc = 0; //Program counter
+unsigned short opcode; //2 bytes
+unsigned short counter;
+unsigned short const counter_start = 0x200;
+unsigned short const max_game_size = (0x1000 - 0x200);
 
-    unsigned char gfx[32][64] = {0}; //Graphics pixels
-    unsigned char delay_timer = 0;
-    unsigned char sound_timer = 0;
-    unsigned char key[16] = {0}; //Current state of the keypad
+unsigned short stack[16] = {0};
+unsigned short stack_point = 0;
 
-    char key_chars[16] = {'1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'};
-    bool escape = false;
 
-    //Flag for updating the display
-    bool draw_flag = false;
+unsigned short V[16] = {0}; //Declare registers
+unsigned short I = 0; //Index register
+unsigned short pc = 0; //Program counter
 
-    bool skip_counter = false;
+unsigned char gfx[32][64] = {0}; //Graphics pixels
+unsigned char delay_timer = 0;
+unsigned char sound_timer = 0;
+unsigned char key[16] = {0}; //Current state of the keypad
 
-    unsigned char chip8_fontset[80] = 
-    { 
-        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-        0x20, 0x60, 0x20, 0x20, 0x70, // 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  // F 
-    };
+char key_chars[16] = {'1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'};
+bool escape = false;
 
-    unsigned short const pixel_size = 10;
-    unsigned short const screen_height = 32 * pixel_size;
-    unsigned short const screen_width = 64 * pixel_size;
+//Flag for updating the display
+bool draw_flag = false;
 
-    SDL_Renderer *renderer;
+bool skip_counter = false;
 
-DWORD WINAPI update_key(LPVOID);
+unsigned char chip8_fontset[80] = 
+{ 
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F 
+};
+
+unsigned short const pixel_size = 20;
+unsigned short const screen_height = 32 * pixel_size;
+unsigned short const screen_width = 64 * pixel_size;
+
+SDL_Renderer *renderer;
+
+//Define functions
+int update_key(void *data);
 void draw_sprite(unsigned char, unsigned char, unsigned char);
 void draw();
-int emulate();
+int emulate(); 
 
-int main() 
+int WinMain(int argc, char* argv[])
 {
     int result = emulate();
     return result;
 }
 
 
-DWORD WINAPI update_key(LPVOID lpParam)
+int update_key(void *data)
 {
     while (!escape)
     {
+        const Uint8* keystates = SDL_GetKeyboardState(NULL);
+
         for (int char_index = 0; char_index < 16; char_index++)
         {
-            if (GetAsyncKeyState(key_chars[char_index]) & 0x8000)
+            if (keystates[SDL_GetScancodeFromKey(key_chars[char_index])])
             {
                 key[char_index] = 1;
             }
@@ -97,7 +98,8 @@ DWORD WINAPI update_key(LPVOID lpParam)
         }
 
         //Check for escape key pressed
-        if (GetAsyncKeyState(KEY_ESC))
+        keystates = SDL_GetKeyboardState(NULL);
+        if (keystates[SDL_GetScancodeFromKey(SDLK_ESCAPE)]) 
         {
             escape = true;
         }
@@ -129,6 +131,7 @@ void draw_sprite(unsigned char x_start, unsigned char y_start, unsigned char byt
             //     }
             //     gfx[(col + bit_index + ((row + byte_index) * 64))] ^= 1;
             // }
+
             unsigned char bit = (byte >> bit_index) & 0x1; //Current bit in the sprite
             
             //Pointer to gfx pixel (representing the pixel on screen)
@@ -185,20 +188,19 @@ void draw()
         // }
         // printf("\n");
     }
-    //Wait (to emulate 60 Hz)
-        struct timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = 1000000000 / 60;
-        //nanosleep(&ts, NULL);
+    // //Wait (to emulate 60 Hz)
+    //     struct timespec ts;
+    //     ts.tv_sec = 0;
+    //     ts.tv_nsec = 1000000000 / 60;
+    //     nanosleep(&ts, NULL);
 }
 
 int emulate() 
 {
-    printf("I am here");
-
     // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-        fprintf(stderr, "SDL_Init Error: %s\n", SDL_GetError());
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0) 
+    {
+        printf("SDL_Init failed: %s\n", SDL_GetError());
         return 1;
     }
 
@@ -215,9 +217,9 @@ int emulate()
     //Location of example Game ROM
     //char file_name[] = ".\\roms\\games\\Tank.ch8"; //ToDo: Add user input to select other games
 
-    //char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
+    char file_name[] = ".\\roms\\games\\Space Invaders [David Winter].ch8"; //ToDo: Add user input to select other games
 
-    char file_name[] = ".\\roms\\games\\UFO [Lutz V, 1992].ch8";
+    //char file_name[] = ".\\roms\\games\\UFO [Lutz V, 1992].ch8";
 
     //Open the ROM file ("rb" means read mode, binary)
     FILE* rom_file = fopen(file_name, "rb");
@@ -239,12 +241,10 @@ int emulate()
     counter = counter_start;
         
     //Start thread to update keys
-    DWORD dwThreadId;
-    HANDLE key_thread = CreateThread(NULL, 0, update_key, NULL, 0, &dwThreadId);
-    if (key_thread == NULL)
-    {
-        printf("Failed to create thread\n");
-        return 1;
+    SDL_Thread *thread = SDL_CreateThread(update_key, "UpdateKeyThread", NULL);
+    if (thread == NULL) {
+        printf("Failed to create thread: %s\n", SDL_GetError());
+        exit(1);
     }
 
     //Define local variables
@@ -642,15 +642,8 @@ int emulate()
         }
     }
 
-
-
-
-
     //Wait for key thread to exit
-    WaitForSingleObject(key_thread, INFINITE);
-
-    //Clean up thread
-    CloseHandle(key_thread);
+    SDL_WaitThread(thread, NULL);
 
     //Quit SDL
     SDL_DestroyRenderer(renderer);

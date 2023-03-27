@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"string.h": "c",
+			"dirent.h": "c",
+			"stdlib.h": "c",
+			"windows.h": "c",
+			"sdl.h": "c"
+		}
+	}
+}
