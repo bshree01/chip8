@@ -10,7 +10,7 @@
 
 #define KEY_ESC 0x1B
 
-bool debug_flag = true;
+bool debug_flag = false;
 //Declare memory array; initialize all to zero 
 unsigned char memory[4096] = {0};
 
@@ -32,7 +32,7 @@ unsigned char delay_timer = 0;
 unsigned char sound_timer = 0;
 unsigned char key[16] = {0}; //Current state of the keypad
 
-char key_chars[16] = {'1', '2', '3', '4', 'Q', 'W', 'E', 'R', 'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'};
+char key_chars[16] = {'1', '2', '3', '4', 'q', 'w', 'e', 'r', 'a', 's', 'd', 'f', 'z', 'x', 'c', 'v'};
 bool escape = false;
 
 //Flag for updating the display
@@ -81,27 +81,74 @@ int WinMain(int argc, char* argv[])
 
 int update_key(void *data)
 {
+    printf("I am here in update_key");
+    // Initialize timer variables
+    int start_time_key_event = SDL_GetTicks();//ToDo var type
+    int frame_time_key_event = 0;
+    int wait_time_key_event = 0;
+    int total_time_key_event = 0;
+
+    SDL_Event event;
+
     while (!escape)
     {
-        const Uint8* keystates = SDL_GetKeyboardState(NULL);
-
-        for (int char_index = 0; char_index < 16; char_index++)
+        // Handle events
+        while (SDL_PollEvent(&event))
         {
-            if (keystates[SDL_GetScancodeFromKey(key_chars[char_index])])
-            {
-                key[char_index] = 1;
-            }
-            else
-            {
-                key[char_index] = 0;
-            }
-        }
+            
+            // Calculate frame time
+            frame_time_key_event = SDL_GetTicks() - start_time_key_event;
 
-        //Check for escape key pressed
-        keystates = SDL_GetKeyboardState(NULL);
-        if (keystates[SDL_GetScancodeFromKey(SDLK_ESCAPE)]) 
-        {
-            escape = true;
+            // Calculate wait time to achieve 2kHz frequency
+            wait_time_key_event = 500 - frame_time_key_event; // 500 microseconds = 2kHz
+
+            // Wait for the remaining time
+            if (wait_time_key_event > 0) {
+                SDL_Delay(wait_time_key_event);
+                total_time_key_event += frame_time_key_event + wait_time_key_event;
+            } else {
+                total_time_key_event += frame_time_key_event;
+            }
+
+            // Update start time for the next iteration
+            start_time_key_event = SDL_GetTicks();
+
+            switch (event.type)
+            {
+                case SDL_KEYDOWN:
+                    if (event.key.keysym.sym == SDLK_ESCAPE) {
+                        escape = true;
+                        printf("Escape key pressed\n");
+                    }
+                    
+                    // Keydown event
+                    for (int char_index = 0; char_index < 16; char_index++)
+                    {
+                        if (event.key.keysym.sym == key_chars[char_index])
+                        {
+                            key[char_index] = 1;
+                            printf("Key %c pressed\n", key_chars[char_index]);
+                            break;
+                        }
+                    }
+
+                    break;
+                case SDL_KEYUP:
+                    // Keyup event
+                    for (int char_index = 0; char_index < 16; char_index++)
+                    {
+                        if (event.key.keysym.sym == key_chars[char_index])
+                        {
+                            key[char_index] = 0;
+                            printf("Key %c released\n", key_chars[char_index]);
+                            break;
+                        }
+                    }
+                    break;
+                default:
+                    // Other event
+                    break;
+            }   
         }
     }
     return 0;
@@ -122,16 +169,6 @@ void draw_sprite(unsigned char x_start, unsigned char y_start, unsigned char byt
         unsigned char byte = memory[I + byte_index];
         for (unsigned char bit_index = 0; bit_index < 8; bit_index++)
         {
-            //ToDo: try this other method (it assumes 1D array instead of 2D though)
-            // if((byte & (0x80 >> bit_index)) !=0)
-            // {
-            //     if(gfx[(col + bit_index + ((row + byte_index) * 64))] == 1)
-            //     {
-            //         V[0xF] = 1;
-            //     }
-            //     gfx[(col + bit_index + ((row + byte_index) * 64))] ^= 1;
-            // }
-
             unsigned char bit = (byte >> bit_index) & 0x1; //Current bit in the sprite
             
             //Pointer to gfx pixel (representing the pixel on screen)
@@ -169,24 +206,6 @@ void draw()
         }
 
         SDL_RenderPresent(renderer); // update the screen
-
-
-        // for (int y = 0; y < 32; y++)
-        // {
-        //     for (int x = 0; x < 64; x++)
-        //     {
-        //         if (gfx[y][x] == 0)
-        //         {
-        //             printf(" ");
-        //         }
-        //         else
-        //         {
-        //             printf("#");
-        //         }
-        //     }
-        //     printf("\n");
-        // }
-        // printf("\n");
     }
     // //Wait (to emulate 60 Hz)
     //     struct timespec ts;
@@ -197,17 +216,18 @@ void draw()
 
 int emulate() 
 {
+    printf("start of emulate()\n");
     // Initialize SDL
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0) 
     {
         printf("SDL_Init failed: %s\n", SDL_GetError());
         return 1;
     }
-
+    printf("SDL initialized\n");
     //Create a window and a renderer
     SDL_Window *window = SDL_CreateWindow("Chip-8 Emulator", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, screen_width, screen_height, SDL_WINDOW_SHOWN);
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
+    printf("window created\n");
     //Set font characters to 0x00 through 0x80 in memory
     for (int font_index = 0; font_index < 80; font_index++)
     {
@@ -239,13 +259,23 @@ int emulate()
 
     //Initialize counter to ROM starting location (0x200)
     counter = counter_start;
-        
+
     //Start thread to update keys
     SDL_Thread *thread = SDL_CreateThread(update_key, "UpdateKeyThread", NULL);
     if (thread == NULL) {
         printf("Failed to create thread: %s\n", SDL_GetError());
         exit(1);
     }
+
+    printf("Thread started to listen for keys\n");
+
+    // Initialize timer variables
+    int start_time_processor = SDL_GetTicks();//ToDo var type
+    int frame_time_processor = 0;
+    int wait_time_processor = 0;
+    int total_time_processor = 0;
+
+
 
     //Define local variables
     unsigned short x;
@@ -259,6 +289,23 @@ int emulate()
     //Loop through until exit criteria breaks out of cycle
     while(!escape)
     {
+        // Calculate frame time
+        frame_time_processor = SDL_GetTicks() - start_time_processor;
+
+        // Calculate wait time to achieve 2kHz frequency
+        wait_time_processor = 500 - frame_time_processor; // 500 microseconds = 2kHz
+
+        // Wait for the remaining time
+        if (wait_time_processor > 0) {
+            SDL_Delay(wait_time_processor);
+            total_time_processor += frame_time_processor + wait_time_processor;
+        } else {
+            total_time_processor += frame_time_processor;
+        }
+
+        // Update start time for the next iteration
+        start_time_processor = SDL_GetTicks();
+
         //opcode = two bytes at the program counter
         opcode = memory[counter] << 8 | memory[counter + 1];
 
@@ -528,10 +575,32 @@ int emulate()
                         if (debug_flag) printf("case FX0A: Wait for key press; Vx = value of the key\n");
 
                         unsigned short key_pressed = 0xFF; //initialize to unused value
+                        // Initialize timer variables
+                        int start_time_user_input = SDL_GetTicks();//ToDo var type
+                        int frame_time_user_input = 0;
+                        int wait_time_user_input = 0;
+                        int total_time_user_input = 0;
 
                         //Loop until a key is pressed
                         while(key_pressed == 0xFF)
                         {
+                             // Calculate frame time
+                            frame_time_user_input = SDL_GetTicks() - start_time_user_input;
+
+                            // Calculate wait time to achieve 2kHz frequency
+                            wait_time_user_input = 500 - frame_time_user_input; // 500 microseconds = 2kHz
+
+                            // Wait for the remaining time
+                            if (wait_time_user_input > 0) {
+                                SDL_Delay(wait_time_user_input);
+                                total_time_user_input += frame_time_user_input + wait_time_user_input;
+                            } else {
+                                total_time_user_input += frame_time_user_input;
+                            }
+
+                            // Update start time for the next iteration
+                            start_time_user_input = SDL_GetTicks();
+
                             //Figure out which key was pressed
                             for (int key_index = 0; key_index < 16; key_index++)
                             {
