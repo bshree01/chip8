@@ -24,14 +24,14 @@
 **VI. Display Output**  
 
 **VII. Improvements** 
-    1. Subdivide into functions
-    2. Other clean-up
+    1. Subdivide into functions  
+    2. Other clean-up  
 
 
 # To Do  
 **VIII. Optimize**  
-    It is running very slow (problem seems to be in draw())
-    CPU usage is also very high
+    It is running very slow (problem seems to be in draw())  
+    CPU usage is also very high  
 
 **IX. Sound Output**  
 
