@@ -19,10 +19,7 @@
 
 **IV. User Input**  
 
-# To Do  
-
 **V. Troubleshoot**  
-    1. Following the operational flow results in unused opcodes... this shouldn't be the case  
 
 **VI. Display Output**  
 
@@ -30,7 +27,13 @@
     1. Subdivide into functions
     2. Other clean-up
 
-**VIII. Sound Output**  
+
+# To Do  
+**VIII. Optimize**  
+    It is running very slow (problem seems to be in draw())
+    CPU usage is also very high
+
+**IX. Sound Output**  
 
 # Notes  
 Example of how to format a link: [link](https://www.example.com).  
