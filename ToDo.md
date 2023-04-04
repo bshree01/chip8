@@ -35,6 +35,3 @@
 
 **IX. Sound Output**  
 
-# Notes  
-Example of how to format a link: [link](https://www.example.com).  
-To make each line appear on a new line, make sure to end each line with two spaces.  
